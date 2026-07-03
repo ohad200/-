@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מערכת קריאת תורים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF8F3;
+    --paper-2:#F1ECDF;
+    --ink:#20293A;
+    --ink-soft:#5B6474;
+    --brass:#C68A3E;
+    --brass-deep:#A66F2B;
+    --sage:#5F7A68;
+    --clay:#B5533C;
+    --line:#D9D2BE;
+    --card-shadow: 0 1px 0 rgba(32,41,58,0.06), 0 6px 16px rgba(32,41,58,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Heebo',sans-serif;
+    min-height:100vh;
+  }
+  .mono{font-family:'Space Mono',monospace;}
+
+  /* ---------- Top bar ---------- */
+  header.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px 28px;
+    background:var(--ink);
+    color:var(--paper);
+    border-bottom:4px solid var(--brass);
+  }
+  header.topbar .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  header.topbar .brand .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--brass);
+    display:inline-block;
+  }
+  header.topbar h1{
+    font-size:19px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.3px;
+  }
+  header.topbar .clock{
+    text-align:left;
+    font-family:'Space Mono',monospace;
+  }
+  header.topbar .clock .time{
+    font-size:24px;
+    font-weight:700;
+    color:var(--brass);
+  }
+  header.topbar .clock .date{
+    font-size:12px;
+    color:#C9CFDA;
+    margin-top:2px;
+  }
+
+  /* ---------- Display board (now serving) ---------- */
+  .board{
+    margin:22px 28px 8px;
+    background:linear-gradient(180deg,#232E42,#1B2331);
+    border-radius:14px;
+    padding:22px 28px;
+    color:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:var(--card-shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .board::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 40px);
+    pointer-events:none;
+  }
+  .board .label{
+    font-size:13px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:#93A0B8;
+    margin-bottom:6px;
+  }
+  .board .number{
+    font-family:'Space Mono',monospace;
+    font-size:56px;
+    font-weight:700;
+    color:var(--brass);
+    line-height:1;
+  }
+  .board .idle{
+    font-size:20px;
+    color:#6E7890;
+  }
+  .board .stopwatch{
+    text-align:left;
+    font-family:'Space Mono',monospace;
+  }
+  .board .stopwatch .t{
+    font-size:34px;
+    font-weight:700;
+    color:var(--paper);
+  }
+  .board .stopwatch .l{
+    font-size:12px;
+    color:#93A0B8;
+    letter-spacing:1px;
+  }
+
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:6px 28px 60px;
+    display:grid;
+    grid-template-columns: 340px 1fr;
+    gap:22px;
+  }
+  @media (max-width: 860px){
+    main{grid-template-columns:1fr;}
+  }
+
+  section.panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 18px 20px;
+    box-shadow:var(--card-shadow);
+  }
+  section.panel h2{
+    font-size:15px;
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--ink);
+  }
+  section.panel h2 .num{
+    font-family:'Space Mono',monospace;
+    color:var(--brass-deep);
+    font-size:13px;
+  }
+
+  label.field{
+    display:block;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:12px 0 5px;
+  }
+  input[type=text], input[type=number], input[type=url]{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-family:'Heebo',sans-serif;
+    font-size:14px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  input:focus{outline:2px solid var(--brass); outline-offset:1px;}
+  .row2{display:flex; gap:10px;}
+  .row2 > div{flex:1;}
+
+  button{
+    cursor:pointer;
+    font-family:'Heebo',sans-serif;
+    font-weight:600;
+    border:none;
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:13.5px;
+    transition:transform .06s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(0.97);}
+  button.primary{background:var(--ink); color:var(--paper);}
+  button.brass{background:var(--brass); color:#241804;}
+  button.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  button.clay{background:var(--clay); color:#fff;}
+  button:disabled{opacity:0.4; cursor:not-allowed;}
+  .btn-row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+
+  .hint{font-size:11.5px; color:var(--ink-soft); margin-top:10px; line-height:1.5;}
+
+  /* staged preview */
+  .staged-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(70px,1fr));
+    gap:8px;
+    margin-top:10px;
+  }
+  .chip{
+    font-family:'Space Mono',monospace;
+    background:var(--paper-2);
+    border:1px dashed var(--brass-deep);
+    border-radius:6px;
+    text-align:center;
+    padding:8px 4px;
+    font-size:13px;
+    font-weight:700;
+  }
+
+  /* queue grid */
+  .queue-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .queue-head .count{
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .queue-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;
+  }
+  .ticket{
+    position:relative;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px 10px 4px 4px;
+    padding:14px 12px 12px;
+    box-shadow:var(--card-shadow);
+    clip-path: polygon(
+      0% 0%, 100% 0%, 100% 88%,
+      92% 100%, 84% 88%, 76% 100%, 68% 88%, 60% 100%, 52% 88%, 44% 100%, 36% 88%, 28% 100%, 20% 88%, 12% 100%, 4% 88%, 0% 100%
+    );
+    padding-bottom:22px;
+    transition:transform .12s ease;
+  }
+  .ticket.waiting{border-inline-start:4px solid var(--sage);}
+  .ticket.called{border-inline-start:4px solid var(--brass); background:#FFF8EB;}
+  .ticket.finished{opacity:0.45;}
+  .ticket .n{
+    font-family:'Space Mono',monospace;
+    font-size:26px;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .ticket .lbl{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin:3px 0 8px;
+    min-height:14px;
+  }
+  .ticket .status{
+    font-size:10.5px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:var(--sage);
+    font-weight:700;
+  }
+  .ticket.called .status{color:var(--brass-deep);}
+  .ticket.finished .status{color:var(--ink-soft);}
+  .ticket button.call{
+    margin-top:8px;
+    width:100%;
+    padding:7px;
+    font-size:12.5px;
+  }
+  .empty-msg{
+    padding:30px 10px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13.5px;
+    border:1px dashed var(--line);
+    border-radius:10px;
+  }
+
+  /* ---------- Service modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(20,25,36,0.55);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  .overlay.hidden{display:none;}
+  .service-card{
+    background:#fff;
+    width:100%; max-width:420px;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  }
+  .service-card .top{
+    background:linear-gradient(180deg,#232E42,#1B2331);
+    color:#fff;
+    padding:26px 24px 20px;
+    text-align:center;
+  }
+  .service-card .top .lbl{
+    font-size:12px; letter-spacing:2px; text-transform:uppercase; color:#93A0B8;
+  }
+  .service-card .top .n{
+    font-family:'Space Mono',monospace;
+    font-size:64px;
+    font-weight:700;
+    color:var(--brass);
+    line-height:1.1;
+    margin:6px 0;
+  }
+  .service-card .top img{
+    max-width:140px; max-height:100px; border-radius:8px; margin-top:8px;
+  }
+  .service-card .mid{
+    padding:18px 24px;
+    text-align:center;
+    border-bottom:1px solid var(--line);
+  }
+  .service-card .mid .desc{font-size:13.5px; color:var(--ink-soft); margin-bottom:14px;}
+  .service-card .mid .sw-label{font-size:11px; letter-spacing:1px; color:var(--ink-soft); text-transform:uppercase;}
+  .service-card .mid .sw{
+    font-family:'Space Mono',monospace;
+    font-size:38px; font-weight:700; color:var(--clay);
+  }
+  .service-card .actions{
+    padding:16px 20px 20px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .service-card .actions button{padding:12px; font-size:14px;}
+
+  /* ---------- Print sheet (hidden on screen) ---------- */
+  #printArea{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{
+      display:block;
+      position:absolute; inset:0;
+    }
+    .print-page{
+      width:190mm;
+      margin:10mm auto;
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      grid-template-rows:repeat(3, 1fr);
+      gap:0;
+      page-break-after:always;
+    }
+    .print-ticket{
+      border:1px dashed #999;
+      height:90mm;
+      padding:8mm 6mm;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-family:'Heebo',sans-serif;
+    }
+    .print-ticket .pn{
+      font-family:'Space Mono',monospace;
+      font-size:34pt;
+      font-weight:700;
+    }
+    .print-ticket .pl{font-size:11pt; margin:4mm 0 2mm; color:#333;}
+    .print-ticket .pd{font-size:9pt; color:#666;}
+    .print-ticket img{max-width:24mm; max-height:20mm; margin-bottom:3mm;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="dot"></span><h1>מערכת קריאת תורים</h1></div>
+  <div class="clock">
+    <div class="time mono" id="clockTime">--:--:--</div>
+    <div class="date" id="clockDate">טוען תאריך…</div>
+  </div>
+</header>
+
+<div class="board" id="board">
+  <div>
+    <div class="label">כרגע קוראים</div>
+    <div id="boardNumber" class="idle">אין קריאה פעילה</div>
+  </div>
+  <div class="stopwatch" id="boardStopwatchWrap" style="display:none;">
+    <div class="t mono" id="boardStopwatch">00:00</div>
+    <div class="l">זמן מרגע הקריאה</div>
+  </div>
+</div>
+
+<main>
+  <!-- Left: create tickets -->
+  <section class="panel">
+    <h2><span class="num">01</span> יצירת כרטיסים להיום</h2>
+
+    <div class="row2">
+      <div>
+        <label class="field">ממספר</label>
+        <input type="number" id="rangeFrom" placeholder="1">
+      </div>
+      <div>
+        <label class="field">עד מספר</label>
+        <input type="number" id="rangeTo" placeholder="9">
+      </div>
+    </div>
+
+    <label class="field">מה כתוב על הכרטיס</label>
+    <input type="text" id="ticketLabel" placeholder="לדוגמה: תור לקבלת קהל">
+
+    <label class="field">קישור לתמונה (לא חובה)</label>
+    <input type="url" id="ticketImage" placeholder="https://...">
+
+    <div class="btn-row">
+      <button class="primary" id="genBtn">צור כרטיסים</button>
+      <button class="ghost" id="clearStageBtn" type="button">נקה</button>
+    </div>
+
+    <div class="hint">התאריך על הכרטיסים מתמלא אוטומטית לפי היום הנוכחי. אחרי היצירה תוכל להדפיס ו/או לשמור במערכת.</div>
+
+    <div id="stagedWrap" style="display:none;">
+      <label class="field" style="margin-top:18px;">תצוגה מקדימה (<span id="stagedCount">0</span> כרטיסים)</label>
+      <div class="staged-grid" id="stagedGrid"></div>
+      <div class="btn-row">
+        <button class="brass" id="printStagedBtn">הדפס</button>
+        <button class="primary" id="saveStagedBtn">שמור במערכת</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: today's queue -->
+  <section class="panel">
+    <div class="queue-head">
+      <h2 style="margin:0;"><span class="num">02</span> כרטיסים זמינים היום</h2>
+      <div class="count" id="queueCount">0 כרטיסים</div>
+    </div>
+    <div class="btn-row" style="margin-top:0; margin-bottom:14px;">
+      <button class="ghost" id="printAllBtn">הדפס את כל הכרטיסים</button>
+      <button class="ghost" id="resetDayBtn">איפוס יום</button>
+    </div>
+    <div id="queueGrid" class="queue-grid"></div>
+  </section>
+</main>
+
+<!-- Service overlay -->
+<div class="overlay hidden" id="overlay">
+  <div class="service-card">
+    <div class="top">
+      <div class="lbl">מטפלים כעת בלקוח</div>
+      <div class="n mono" id="svcNumber">000</div>
+      <img id="svcImage" style="display:none;">
+    </div>
+    <div class="mid">
+      <div class="desc" id="svcDesc"></div>
+      <div class="sw-label">שעון עצר</div>
+      <div class="sw mono" id="svcStopwatch">00:00</div>
+    </div>
+    <div class="actions">
+      <button class="clay" id="finishBtn">סיים שירות</button>
+      <button class="primary" id="finishNextBtn">סיים שירות וקרא הבא</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden print sheet -->
+<div id="printArea"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- date / clock ----------
+  function todayKey(d){
+    d = d || new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function heDate(d){
+    return d.toLocaleDateString('he-IL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  }
+  function tick(){
+    const now = new Date();
+    document.getElementById('clockTime').textContent = now.toLocaleTimeString('he-IL',{hour12:false});
+    document.getElementById('clockDate').textContent = heDate(now);
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  // ---------- state ----------
+  let tickets = [];      // {number, label, image, date, status:'waiting'|'called'|'finished', calledAt}
+  let staged = [];       // pending batch not yet saved
+  let activeTicket = null; // currently open service ticket (reference into tickets array)
+  let storageKey = 'queue-tickets-' + todayKey();
+
+  async function loadTickets(){
+    try{
+      const res = await window.storage.get(storageKey, false);
+      if(res && res.value){
+        tickets = JSON.parse(res.value);
+      }
+    }catch(e){
+      tickets = [];
+    }
+    renderQueue();
+  }
+
+  async function persistTickets(){
+    try{
+      await window.storage.set(storageKey, JSON.stringify(tickets), false);
+    }catch(e){
+      console.error('שגיאת שמירה', e);
+    }
+  }
+
+  function fmtNum(n){ return String(n).padStart(3,'0'); }
+
+  function sortTickets(){
+    tickets.sort((a,b)=> a.number - b.number);
+  }
+
+  // ---------- generate staged batch ----------
+  document.getElementById('genBtn').addEventListener('click', ()=>{
+    const from = parseInt(document.getElementById('rangeFrom').value, 10);
+    const to = parseInt(document.getElementById('rangeTo').value, 10);
+    const label = document.getElementById('ticketLabel').value.trim();
+    const image = document.getElementById('ticketImage').value.trim();
+
+    if(isNaN(from) || isNaN(to) || from > to){
+      alert('נא להזין טווח מספרים תקין (ממספר ≤ עד מספר).');
+      return;
+    }
+    if(to - from > 200){
+      alert('טווח גדול מדי. נא לבחור עד 200 כרטיסים בפעם אחת.');
+      return;
+    }
+    const dateStr = heDate(new Date());
+    staged = [];
+    for(let n = from; n <= to; n++){
+      staged.push({number:n, label, image, date:dateStr, status:'waiting', calledAt:null});
+    }
+    renderStaged();
+  });
+
+  document.getElementById('clearStageBtn').addEventListener('click', ()=>{
+    staged = [];
+    renderStaged();
+  });
+
+  function renderStaged(){
+    const wrap = document.getElementById('stagedWrap');
+    const grid = document.getElementById('stagedGrid');
+    document.getElementById('stagedCount').textContent = staged.length;
+    grid.innerHTML = '';
+    if(staged.length === 0){
+      wrap.style.display = 'none';
+      return;
+    }
+    wrap.style.display = 'block';
+    staged.forEach(t=>{
+      const div = document.createElement('div');
+      div.className = 'chip';
+      div.textContent = fmtNum(t.number);
+      grid.appendChild(div);
+    });
+  }
+
+  document.getElementById('saveStagedBtn').addEventListener('click', async ()=>{
+    if(staged.length === 0) return;
+    const existingNumbers = new Set(tickets.map(t=>t.number));
+    staged.forEach(t=>{
+      if(existingNumbers.has(t.number)){
+        // overwrite existing ticket with same number
+        const idx = tickets.findIndex(x=>x.number===t.number);
+        tickets[idx] = t;
+      } else {
+        tickets.push(t);
+      }
+    });
+    sortTickets();
+    await persistTickets();
+    staged = [];
+    renderStaged();
+    renderQueue();
+  });
+
+  document.getElementById('printStagedBtn').addEventListener('click', ()=>{
+    if(staged.length === 0){ alert('אין כרטיסים להדפסה. צור כרטיסים קודם.'); return; }
+    printTickets(staged);
+  });
+
+  document.getElementById('printAllBtn').addEventListener('click', ()=>{
+    if(tickets.length === 0){ alert('אין כרטיסים שמורים להדפסה.'); return; }
+    printTickets(tickets);
+  });
+
+  document.getElementById('resetDayBtn').addEventListener('click', async ()=>{
+    if(!confirm('לאפס את כל כרטיסי היום? הפעולה בלתי הפיכה.')) return;
+    tickets = [];
+    await persistTickets();
+    renderQueue();
+  });
+
+  // ---------- print ----------
+  function printTickets(list){
+    const area = document.getElementById('printArea');
+    area.innerHTML = '';
+    let page;
+    list.forEach((t, i)=>{
+      if(i % 9 === 0){
+        page = document.createElement('div');
+        page.className = 'print-page';
+        area.appendChild(page);
+      }
+      const card = document.createElement('div');
+      card.className = 'print-ticket';
+      let imgHtml = '';
+      if(t.image){
+        imgHtml = '<img src="'+t.image.replace(/"/g,'&quot;')+'">';
+      }
+      card.innerHTML = imgHtml +
+        '<div class="pn">'+fmtNum(t.number)+'</div>' +
+        '<div class="pl">'+(t.label ? escapeHtml(t.label) : '')+'</div>' +
+        '<div class="pd">'+t.date+'</div>';
+      page.appendChild(card);
+    });
+    window.print();
+  }
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- queue rendering ----------
+  function renderQueue(){
+    const grid = document.getElementById('queueGrid');
+    document.getElementById('queueCount').textContent = tickets.length + ' כרטיסים';
+    grid.innerHTML = '';
+    if(tickets.length === 0){
+      grid.innerHTML = '<div class="empty-msg">אין עדיין כרטיסים זמינים היום. צור ושמור כרטיסים בצד שמאל.</div>';
+      grid.style.gridTemplateColumns = '1fr';
+      return;
+    }
+    grid.style.gridTemplateColumns = '';
+    tickets.forEach(t=>{
+      const div = document.createElement('div');
+      div.className = 'ticket ' + t.status;
+      const statusText = t.status === 'waiting' ? 'ממתין' : (t.status === 'called' ? 'נקרא' : 'הסתיים');
+      div.innerHTML =
+        '<div class="n mono">'+fmtNum(t.number)+'</div>' +
+        '<div class="lbl">'+(t.label ? escapeHtml(t.label) : '')+'</div>' +
+        '<div class="status">'+statusText+'</div>';
+      if(t.status === 'waiting'){
+        const btn = document.createElement('button');
+        btn.className = 'brass call';
+        btn.textContent = 'קרא ללקוח 🔊';
+        btn.addEventListener('click', ()=> callTicket(t));
+        div.appendChild(btn);
+      }
+      grid.appendChild(div);
+    });
+  }
+
+  // ---------- speech ----------
+  let cachedVoices = [];
+  function loadVoices(){ cachedVoices = speechSynthesis.getVoices(); }
+  loadVoices();
+  if('onvoiceschanged' in speechSynthesis){ speechSynthesis.onvoiceschanged = loadVoices; }
+
+  function speak(text){
+    try{
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'he-IL';
+      const heVoice = cachedVoices.find(v => v.lang && v.lang.toLowerCase().startsWith('he'));
+      if(heVoice) utter.voice = heVoice;
+      utter.rate = 0.92;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+    }catch(e){
+      console.error('שגיאת הקראה', e);
+    }
+  }
+
+  // ---------- calling / service flow ----------
+  let swInterval = null;
+  let boardInterval = null;
+
+  function callTicket(t){
+    t.status = 'called';
+    t.calledAt = Date.now();
+    persistTickets();
+    speak('לקוח מספר ' + t.number + ', נא לגשת לעמדות הצוות');
+    openServiceCard(t);
+    renderQueue();
+    updateBoardIdle();
+  }
+
+  function openServiceCard(t){
+    activeTicket = t;
+    document.getElementById('svcNumber').textContent = fmtNum(t.number);
+    document.getElementById('svcDesc').textContent = t.label || '';
+    const img = document.getElementById('svcImage');
+    if(t.image){
+      img.src = t.image;
+      img.style.display = 'inline-block';
+    } else {
+      img.style.display = 'none';
+    }
+    document.getElementById('overlay').classList.remove('hidden');
+    startStopwatch();
+  }
+
+  function closeServiceCard(){
+    document.getElementById('overlay').classList.add('hidden');
+    stopStopwatch();
+    activeTicket = null;
+    updateBoardIdle();
+  }
+
+  function fmtElapsed(ms){
+    const totalSec = Math.floor(ms/1000);
+    const m = String(Math.floor(totalSec/60)).padStart(2,'0');
+    const s = String(totalSec%60).padStart(2,'0');
+    return m+':'+s;
+  }
+
+  function startStopwatch(){
+    stopStopwatch();
+    updateStopwatchDisplays();
+    swInterval = setInterval(updateStopwatchDisplays, 1000);
+  }
+  function stopStopwatch(){
+    if(swInterval){ clearInterval(swInterval); swInterval = null; }
+  }
+  function updateStopwatchDisplays(){
+    if(!activeTicket) return;
+    const elapsed = fmtElapsed(Date.now() - activeTicket.calledAt);
+    document.getElementById('svcStopwatch').textContent = elapsed;
+    document.getElementById('boardStopwatch').textContent = elapsed;
+  }
+
+  function updateBoardIdle(){
+    const boardNum = document.getElementById('boardNumber');
+    const swWrap = document.getElementById('boardStopwatchWrap');
+    if(activeTicket){
+      boardNum.className = 'n mono';
+      boardNum.textContent = '';
+      boardNum.innerHTML = '<span class="mono" style="font-family:\'Space Mono\',monospace;font-size:56px;font-weight:700;color:var(--brass);">'+fmtNum(activeTicket.number)+'</span>';
+      swWrap.style.display = 'block';
+    } else {
+      boardNum.className = 'idle';
+      boardNum.textContent = 'אין קריאה פעילה';
+      swWrap.style.display = 'none';
+    }
+  }
+
+  document.getElementById('finishBtn').addEventListener('click', ()=>{
+    if(activeTicket){
+      activeTicket.status = 'finished';
+      persistTickets();
+      renderQueue();
+    }
+    closeServiceCard();
+  });
+
+  document.getElementById('finishNextBtn').addEventListener('click', ()=>{
+    if(activeTicket){
+      activeTicket.status = 'finished';
+    }
+    const next = tickets.find(t => t.status === 'waiting');
+    persistTickets();
+    renderQueue();
+    if(next){
+      callTicket(next);
+    } else {
+      closeServiceCard();
+      alert('אין כרטיסים נוספים בהמתנה.');
+    }
+  });
+
+  // close overlay if clicking outside card (optional convenience) - disabled to avoid accidental loss
+  // init
+  loadTickets();
+})();
+</script>
+</body>
+</html>
